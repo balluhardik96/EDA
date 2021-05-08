@@ -1,0 +1,175 @@
+---
+title: "parliment"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+parliment = read.csv("C://Users//Administrator//Desktop//EDAdatasets//parliament.csv")
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+### % of Missing values in age column of parliment
+```{r}
+sum(is.na(parliment$AGE))/ nrow(parliment)*100
+```
+
+
+
+```{r}
+sum(is.na(parliment$CATEGORY))/ nrow(parliment)*100
+
+```
+
+### Outliers
+
+- Stands out from rest of the data points
+- Is it good or bad? depends upon the data
+- Detecting Outliers
+  -Histograms
+  -Box plots
+  -Scatter plots
+  -....
+  
+```{r}
+boxplot(parliment$AGE)
+sum(is.na(parliment$CATEGORY))-nrow(parliment)
+
+```
+  
+```{r}
+q1= quantile(parliment$AGE, 0.25, na.rm=T)
+q2= quantile(parliment$AGE, 0.5, na.rm=T)
+q3= quantile(parliment$AGE, 0.75, na.rm=T)
+a<-print(c(q1,q2,q3))
+iqr= q3-q1
+iqr
+lw= q1-1.5*iqr
+uw= q3+1.5*iqr
+print(c(lw,uw))
+
+```
+
+```{r}
+#sum(is.na(parliment$AGE))/ nrow(parliment)*100
+outliers=parliment%>% filter(AGE<9 | AGE>81)
+nrow(outliers) /sum(!is.na(parliment$AGE)) * 100
+
+```
+  
+  
+```{r}
+outliers=parliment%>% filter(AGE<9 | AGE>81)
+nrow(outliers) /sum(!is.na(parliment$AGE)) * 100
+```
+
+```{r}
+parliment%>% filter(YEAR==2009)%>%summarise(parties=length(unique(PARTY)))
+```
+
+```{r}
+parliment%>% filter( PARTY %in% c('BJP'))%>% group_by(YEAR) %>%
+  summarise(N_CONT=n())
+```
+
+```{r}
+parliment%>% filter((YEAR==2009), PARTY %in% c('BJP','INC'))%>% group_by(PARTY) %>%
+  summarise(per_win=sum(Position==1)/n()*100)
+```
+
+```{r}
+parliment%>% filter((YEAR==2009), PARTY %in% c('BJP','INC'), Position==1)%>% group_by(PARTY) %>%
+  summarise(N_WON=n())
+```
+
+```{r}
+parliment%>% filter((YEAR==2009), STATE == 'KARNATAKA', PC == 'BANGALORE CENTRAL') %>%summarise(TOTAL_VOTES=sum(VOTES, na.rm = T),                              TOTAL_ELECTORS= min(ELECTORS, na.rm = T), N_CONTESTENTS= n(), VOTERS_TURNOUT= sum(VOTES)/min(ELECTORS)*100)
+```
+
+
+```{r}
+parliment%>% filter( STATE == 'KARNATAKA', PC == 'BANGALORE NORTH') %>% group_by(YEAR) %>%summarise( VOTERS_TURNOUT= sum(VOTES)/min(ELECTORS)*100)
+```
+
+
+```{r}
+parliment%>% filter( PARTY %in% c('BJP')) %>% group_by(YEAR)%>%summarise(no_of_votes=sum(VOTES),TOTAL_ELECTORS= min(ELECTORS, na.rm = T),per_votes=(sum(VOTES)/sum(ELECTORS))*100)
+```
+
+
+```{r}
+parliment%>% filter((YEAR==1985))%>%group_by(PARTY)%>% summarise(no_of_votes=sum(VOTES),TOTAL_ELECTORS= sum(ELECTORS, na.rm = T),per_votes=(sum(VOTES)/sum(ELECTORS))*100)
+```
+
+
+#Yearwise total no of voters and electors
+```{r}
+parliment %>%group_by(YEAR,STATE,PC)%>% summarise(no_of_voters=sum(VOTES),TOTAL_ELECTORS= min(ELECTORS, na.rm = T)) %>%group_by(YEAR) %>% summarise(n_VOTES=sum(no_of_voters),n_ELECTORS=sum(TOTAL_ELECTORS),VOTERS_TURNOUT=n_VOTES/n_ELECTORS*100)
+                                                                                                                                                                                        
+```
+
+
+```{r}
+parliment%>%  group_by(YEAR)%>%summarise(no_of_votes=sum(VOTES),TOTAL_ELECTORS= min(ELECTORS, na.rm = T),per_votes=(sum(VOTES)/sum(ELECTORS))*100)
+```
+
+```{r}
+#names(parliment)
+p1 = parliment%>% filter(YEAR==2009)%>% group_by(STATE, PC)%>%summarise(contestants=n())
+boxplot(p1$contestants)
+```
+
+```{r}
+p1%>% filter(contestants>30)%>% group_by(STATE)%>% summarise(STATE_COUNT=n())%>% arrange(-STATE_COUNT)
+```
+
+```{r}
+p2 = parliment%>% filter(YEAR==2004)%>% group_by(STATE, PC)%>%summarise(contestants=n())
+boxplot(p2$contestants)
+```
+
+```{r}
+p2%>% filter(contestants>23.5)%>% group_by(STATE)%>% summarise(STATE_COUNT=n())%>% arrange(-STATE_COUNT)
+```
+
+
+```{r}
+p3 = parliment%>% filter(YEAR==1999)%>% group_by(STATE, PC)%>%summarise(contestants=n())
+boxplot(p2$contestants)
+```
+
+```{r}
+p3%>% filter(contestants>11.5)%>% group_by(STATE)%>% summarise(STATE_COUNT=n())%>% arrange(-STATE_COUNT)
+```
+
+
+
+```{r}
+summary(parliment)
+```
+

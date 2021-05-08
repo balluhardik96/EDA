@@ -1,0 +1,179 @@
+---
+title: "Bank"
+author: "nikhil.shetty"
+date: "19 February 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+bank = read.csv("C://Users//Administrator//Desktop//EDAdatasets//bank-full.csv",sep = ';')
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+```
+```{r}
+kable(head(bank))
+```
+
+
+```{r}
+bank1<-bank%>% select(job) %>% group_by(job)%>% summarise(no_of_jobs=n()/nrow(bank)* 100)%>% head(10) %>% arrange(-no_of_jobs)%>% mutate(cum_sum=cumsum(no_of_jobs)) %>% ggplot(aes(x=reorder(job,cum_sum),y=cumsum(no_of_jobs))) +geom_line(group=1) +xlab('levels')+ylab('cumulative_percent') 
+```
+
+
+```{r}
+col = 'job'
+bank%>% select(job) %>% group_by(job)%>% summarise(no_of_jobs=n()/nrow(bank)* 100)%>% head(10) %>% arrange(-no_of_jobs)%>% mutate(cum_sum=cumsum(no_of_jobs)) %>% ggplot(aes(x=reorder(job,cum_sum),y=cumsum(no_of_jobs))) +geom_line(group=1) +xlab('levels')+ylab('cumulative_percent')
+```
+
+
+```{r}
+col = 'job'
+bank%>% group_by_(col) %>% summarise(col_count=n(), freq_per=n()/nrow(bank)) %>% mutate(cum_per= cumsum(freq_per))%>% ggplot(aes_string(x=paste0('reorder(',col,',cum_per)'),y='cum_per'))+ geom_bar(stat = 'identity' , fill='steelblue') + coord_flip()+ xlab(col)+ ylab('Frequency')
+
+
+```
+
+```{r}
+hist(bank$age, col = bank$age)
+hist(bank$balance)
+```
+
+
+```{r}
+tweets
+```
+
+
+##Bivariate Analysis
+### Crosstab Analysis
+- Identify depending between two categorical variables
+```{r}
+names(bank)
+dim(bank)
+table(bank$age, bank$education)
+
+```
+
+#Function to identify all factor columns
+```{r}
+factor<- function(bank){
+  v=names(bank)[sapply(bank, is.factor)]
+  return (v)
+}
+
+b<-factor(bank)
+
+lev <- matrix(nrow = length(b),ncol = length(b))
+i=1
+while(i<=nrow(lev)){
+  j=1
+  while(j<=nrow(lev)){
+    lev[i,j]<- paste(b[i],b[j],sep = ",")
+    j=j+1
+  }
+  i=i+1
+}
+print(lev)
+#names(grep("factor", sapply(bank, class), value=TRUE)) 
+```
+
+
+#Combination of factors
+```{r}
+names(bank)
+a<-bank%>% filter(job=="technician")
+fac_comb=combn(b,2,simplify = FALSE)
+```
+
+#Loop through each combination
+```{r}
+for(comb in fac_comb){
+  chi_res = chisq.test(bank[,comb[1]], bank[,comb[2]])
+  if(chi_res$p.value<0.05)
+  print(comb)
+}
+```
+
+
+#function to return a comb of factor
+```{r}
+chi_sq <- function(bank){
+  b1<-names(bank)[sapply(bank, is.factor)]
+  fac_comb=combn(b1,2,simplify = FALSE)
+  for(comb in fac_comb){
+  chi_res = chisq.test(bank[,comb[1]], bank[,comb[2]])
+  if(chi_res$p.value<0.05){
+    return(comb)
+  }
+  }
+}
+print(chi_sq)
+```
+
+#Identify numerical columns
+```{r}
+numeric = function(bank){
+  v1=names(bank)[sapply(bank, is.numeric)]
+  return (v1)
+}
+n1<-numeric(bank)
+n1
+fac_comb=combn(n1,2,simplify = FALSE)
+for(comb in fac_comb){
+  abs_res = cor.test(bank[,comb[1]], bank[,comb[2]])
+  if(abs_res$p.value >0.75 ){
+  print(comb)
+  }
+}
+```
+
+#function to return a comb of factor
+```{r}
+abs_values <- function(x){
+n1<-names(x)[sapply(x, is.numeric)]
+fac_comb=combn(n1,2,simplify = FALSE)
+corr_f<-c()
+corr_abs<-c()
+for(comb in fac_comb){
+    abs_res = cor(x[,comb[1]], x[,comb[2]])
+    i=1
+    if(abs(abs_res) >0.75){
+      corr_f[i]<- paste0(comb[1],comb[2],sep=",")
+      corr_abs[i]<- abs_res
+      i=i+1
+    }
+}
+corr_df<- data.frame(corr_f,corr_abs)
+return(arrange(corr_df,-corr_abs))
+  
+}
+
+
+abs_values(stocks)
+```

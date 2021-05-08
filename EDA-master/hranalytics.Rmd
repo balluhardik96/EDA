@@ -1,0 +1,166 @@
+---
+title: "HR Analytics"
+author: "Nikhil Shetty"
+date: "5 March 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+hra = read.csv("C://Users//Administrator//Desktop//EDAdatasets//HR Analytics.csv")
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+#install.packages("ggmap")
+library(ggmap)
+source('eda.R')
+library(corrplot)
+```
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+```{r}
+ggplot(hra,aes(x=EducationField, y=MonthlyIncome))+ geom_boxplot()
+```
+
+```{r}
+ggplot(hra, aes(x=JobRole, y=MonthlyIncome))+ geom_boxplot()+theme(axis.text.x = element_text(angle=270))
+```
+
+
+```{r}
+ggplot(hra, aes(x=MaritalStatus, y=MonthlyIncome))+ geom_boxplot()+ theme(axis.text.x = element_text(angle = 45))
+```
+
+### T-Test
+```{r}
+t_test = t.test(MonthlyIncome~Gender, data=hra)
+t_test$p.value
+t_test
+```
+
+###ANNOVA
+```{r}
+unique(hra$JobRole)
+aov_summary= aov(MonthlyIncome~JobRole, data=hra)
+summary(aov_summary)[[1]][1,'Pr(>F)']
+summary(aov_summary)[[1]][1,'Pr(<F)']
+
+
+ggplot(hra, aes(color=JobRole, MonthlyIncome))+ geom_density()
+```
+
+```{r}
+t_test = t.test(HourlyRate~Gender, data=hra)
+t_test$p.value
+t_test
+```
+
+```{r}
+names(hra)
+num_cols=get_numeric(hra)
+corrplot(cor(hra[,num_cols]))
+hist(hra$MonthlyIncome)
+plot(density(hra$MonthlyIncome))
+ggplot(hra, aes(MonthlyIncome,color=Gender)) + geom_density()
+plot(density(hra$DailyRate))
+ggplot(hra, aes(JobRole,color=Gender)) + geom_density()
+```
+
+
+```{r}
+
+get_factor = function(df){
+  return (names(which(sapply(df, is.factor))))
+}
+
+
+category_column=function(df,variable){
+  influencers=c()
+  fact_col=get_factor(df)
+  for(i in fact_col){
+    levels=nlevels(df[,i])
+    #print(i)
+    if(levels>1){
+      a = summary(aov(df[,variable]~df[,i]))
+      p = a[[1]][1,'Pr(>F)']
+      #print(p)
+      if(p < 0.05)  influencers= c(influencers, i)
+      }
+  }
+  return(influencers)
+} 
+   
+category_column(hra,'MonthlyIncome') 
+```
+
+
+##Sir code
+```{r}
+numerical_column=function(df,var){
+  cor_threshold = 0.8
+  result=c()
+  fact_col=colnames(df)
+  for(i in fact_col){
+    if(is.numeric(df[,i]) & (i!=var)){
+      if(sd(df[,i])>0){
+        comb_cor = cor(df[,i], df[,var])
+        abs_val=abs(comb_cor)
+          if (abs_val>cor_threshold){
+           result=c(result,i)}
+      }
+    }
+  }
+  return(result)
+}
+
+numerical_column(hra,'MonthlyIncome') 
+```
+
+
+##My code
+```{r}
+get_numeric = function(df){
+  return (names(which(sapply(df, is.numeric))))
+}
+
+
+numeric_column=function(df,variable){
+  cor_threshold = 0.8
+  result=c()
+  fact_col=get_numeric(df)
+  for(i in fact_col){
+    if((i!=variable)){
+      if(sd(df[,i])>0){
+        comb_cor = cor(df[,i], df[,variable])
+        abs_val=abs(comb_cor)
+          if (abs_val>cor_threshold){
+           result=c(result,i)}
+      }
+    }
+  }
+  return(result)
+}
+   
+numeric_column(hra,'MonthlyIncome') 
+```
+

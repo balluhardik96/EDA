@@ -1,0 +1,187 @@
+---
+title: "stock_prices"
+author: "nikhil"
+date: "26 February 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+stocks = read.csv("C://Users//Administrator//Desktop//EDAdatasets//stock_prices.csv")
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(corrplot)
+library(Matrix)
+install.packages("corrplot")
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F)
+```
+
+corrplot 0.84 loaded
+
+```{r}
+corr_matrix = cor(stocks %>% select(-Date))
+corrplot(corr_matrix, method = 'color', type= 'lower',order = 'hclust', addrect=3)
+```
+
+```{r}
+ggplot(stocks, aes(x=Amazon, y=Tesla)) + geom_point() + geom_smooth()
+```
+
+#Eigen values
+```{r}
+names(stocks)
+e= eigen(cor(stocks%>% select(-Date, -Alibaba)))
+e$values
+```
+
+#Standadization
+```{r}
+View(stocks$Microsoft)
+sample_mean= mean(stocks$Microsoft)
+x= stocks$Microsoft
+sample_mean
+x_demean= x- sample_mean
+plot(x_demean)
+sd(x_demean)
+
+x_std= x_demean/sd(x_demean)
+sd(x_std)
+plot(x_std)
+
+```
+
+#Remove Date and samsung(It has lot of NA values) columns
+```{r}
+stocks_std= scale(stocks %>% select(-Date,Alibaba))
+View(stocks_std)
+mean(stocks_std[,5])
+sd(stocks_std[,2])
+```
+
+#Eigen values for standadized values
+```{r}
+e= eigen(cor(stocks_std))
+e$values
+```
+
+```{r}
+e= eigen(cor(stocks_std))
+e$values
+pcs= stocks_std %*% e$vectors
+for(i in seq(1:dim(pcs)[2])){
+  print(var(pcs[,i]))
+}
+
+dim(pcs)
+View(as.data.frame(pcs))
+```
+
+```{r}
+dim(stocks_std)
+```
+
+```{r}
+pcs_new=pcs
+pcs_new[,2:6]=0
+stocks_rec1= pcs_new%*% t(e$vectors)
+{{plot(stocks_std[,6], type='l', col='red')
+  lines(stocks_rec1[,6],col='black')}}
+```
+
+```{r}
+stocks_sub= stocks %>% select(-Date)
+dim(stocks_sub)
+
+pcs= prcomp(stocks_sub,scale. = T)
+names(pcs)
+
+View(pcs$x) #Principal Components
+dim(pcs$x)
+
+View(pcs$rotation)
+dim(pcs$rotation)
+
+pcs$sdev # square root of Eigen Values
+sd(stocks_sub[,1])
+
+pcs$scale #SD of input data before scaling
+var(pcs$x[,1])
+
+pcs$center #Mean of each input column before scaling
+var(pcs$x[,1])
+```
+
+
+```{r}
+plot(pcs) #Varience of individual principal components
+
+screeplot(pcs)
+?screeplot
+```
+
+```{r}
+screeplot(pcs, type = 'lines')
+#CUmulative varience curve
+plot(cumsum(pcs$sdev / sum(pcs$sdev)*100), type = 'l')
+```
+
+##Manual method
+```{r}
+df_scale= scale(stocks)
+e= eigen(cor(df_scale))
+pcs= df_scale%*% e$vectors
+cum_var = cumsum(e$values/sum(e$values)*100)
+plot(cum_var,type='l')
+
+```
+
+## Recostruct
+```{r}
+pcs_new = pcs
+pcs_new[,5:dim(df_scale)[2]] = 0
+df_scale_rec = pcs_new %*% t(e$vectors)
+colnames(df_scale_rec) = colnames(stocks)
+
+
+df_rec = (df_scale_rec= sapply(stocks, sd)) + sapply(stocks, mean)
+
+{{plot(stocks[,1], type= 'l')
+  lines(df_rec[,1], col='red')}}
+
+View(df_rec)
+```
+
+#Implementation of Factor analysis
+```{r}
+dim(stocks)
+stocks1 = stocks %>% select(-Date)
+stocks_scale=scale(stocks1)
+
+e= eigen(cor(stocks_scale))
+cumsum(e$values/sum(e$values)*100)
+
+fcs= factanal(x= stocks_scale, factors = 3)
+
+fcs= factanal(x= stocks_scale, factor = 3, scores = 'regression')
+
+fcs
+fcs$loadings
+View(fcs$scores)
+
+library(psych)
+fa.out= fa(stocks_scale, nfactors = 3, fm = 'pa')
+fa.diagram(fa.out)
+
+```
+

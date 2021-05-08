@@ -1,0 +1,156 @@
+---
+title: "modi"
+author: "nikhil.shetty"
+date: "19 February 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+modi = read.csv("C://Users//Administrator//Desktop//EDAdatasets//narendramodi_tweets.csv")
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(tm)
+library(stringi)
+library(reshape)
+install.packages("reshape")
+
+```
+
+
+```{r}
+max(modi$favorite_count)
+```
+
+```{r}
+hist(modi$retweets_count)
+hist(modi$hashtags_count)
+
+```
+
+```{r}
+hist(modi$friends_count)
+```
+
+```{r}
+b2<-sapply(seq(1,10), function(x)paste0('B',x))
+modi$retweets_bins= cut(modi$retweets_count,10, labels = b2)
+modi%>% group_by(retweets_bins) %>% summarise(count_bins=n())%>% ggplot(aes(reorder(retweets_bins, count_bins),y=count_bins)) + geom_bar(stat='identity', fill='red') + coord_flip() + xlab('Retweet Bins') + ylab('Frequency count')
+```
+
+```{r}
+text= as.character(modi$text) #convert to character
+text_lower= tolower(text) #convert to lower case
+text_words= strsplit(text_lower, " ")#At row level, split text to words
+head(text_words)
+strsplit(text_lower, " ")[[1]][1]
+words_flatten= unlist((text_words)) #Flatten the two dimension to a single vector
+words_freq = table(words_flatten) # Calculate frequency of each word
+table(words_flatten)
+
+df_words_freq = as.data.frame(words_freq)
+names(df_words_freq) = c('words','freq')
+View(df_words_freq)
+
+df_words_freq%>% arrange(-freq)%>%head(50)
+stop_words = stopwords()
+length(stop_words)
+
+df_words_freq = df_words_freq[!df_words_freq$words %in% stop_words, ]
+
+
+
+```
+
+```{r}
+samp= c('this is sample text', 'this is a sentence', 'this is third row')
+nchar(samp)
+modi$text = as.character(modi$text)
+modi$text_nchar = nchar(modi$text)
+modi$text_nwords= strsplit(modi$text, ' ')
+
+modi$text_nwords = sapply(strsplit(modi$text,' '),function(x) length(x))
+
+View(modi %>% select(text, text_nchar, text_nwords))
+strsplit(modi$text[1], ' ')
+
+# Count how many times the word india is appearing in each sentence
+
+modi$text_count= stri_count(tolower(modi$text), fixed= 'india')
+View(modi %>% select(text, text_nchar, text_nwords, text_count))
+
+
+top_words_list= df_words_freq %>% arrange(-freq) %>% head(10)
+for(word in head(top_words_list$words)){
+  modi[, word]= stri_count(tolower(modi$text), fixed=word)
+}
+```
+
+
+```{r}
+ggplot(modi, aes(x=favorite_count, y=retweets_count)) + geom_point() + geom_smooth()
+
+```
+
+```{r}
+boxplot(modi$favorite_count)
+```
+
+
+```{r}
+modi$created_at = as.Date(modi$created_at, '%m-%d-%Y')
+modi$weekday=weekdays(modi$date)
+modi$year=format(modi$date,'%Y')
+modi$Days=format(modi$date, '%d')
+modi$Months=format(modi$date, '%m')
+modi$weekday=weekdays(modi$date)
+modi$quater= quarters(modi$date)
+```
+
+```{r}
+names(modi)
+modi%>% select(month,day,Months,Days)
+crosstab<- modi%>% group_by(Months,Days)%>% summarise(Retweets_count= sum(retweets_count, na.rm = T))
+crosstab<- as.data.frame(crosstab)
+names(crosstab)
+names(crosstab)<- c("Months","Days","Retweets_Count")
+cross_table = cast(crosstab, Months~Days)
+View(cross_table)
+d<- ggplot(crosstab, aes(Months,Days) + geom_tile(aes(fill= Retweets_Count), colour="white",size=1) + scale_fill_gradient(low = "white",high = "red", na.value = "white")
+plot(d)
+```
+
+
+```{r}
+unique(modi$source)
+```
+
+```{r}
+ggplot(modi, aes(x=lang, y=favorite_count))+geom_boxplot()
+```
+
